@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Images</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0f0f; color: #eee; font-family: system-ui, sans-serif; }
+
+  header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #222;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  header .title { font-size: 1rem; font-weight: 600; white-space: nowrap; }
+
+  .storage {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #888;
+    white-space: nowrap;
+  }
+  .storage-bar {
+    width: 80px;
+    height: 5px;
+    background: #333;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .storage-bar-fill {
+    height: 100%;
+    background: {% if pct > 80 %}#ef4444{% elif pct > 50 %}#f59e0b{% else %}#22c55e{% endif %};
+    width: {{ pct }}%;
+    border-radius: 3px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 10px;
+    border-bottom: 1px solid #222;
+  }
+  .tab {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #888;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab.active { color: #fff; border-bottom-color: #2563eb; }
+
+  .controls {
+    padding: 8px 10px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .sort-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    border: 1px solid #333;
+    background: #1a1a1a;
+    color: #aaa;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .sort-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 6px;
+  }
+  @media (min-width: 480px)  { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 768px)  { .grid { grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px; } }
+  @media (min-width: 1100px) { .grid { grid-template-columns: repeat(6, 1fr); } }
+  @media (min-width: 1600px) { .grid { grid-template-columns: repeat(8, 1fr); } }
+
+  .card { background: #1a1a1a; border-radius: 8px; overflow: hidden; position: relative; }
+
+  .thumb-wrap { position: relative; aspect-ratio: 1/1; background: #222; overflow: hidden; }
+  .thumb-wrap a.cover { display: block; width: 100%; height: 100%; }
+  .thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .size-badge {
+    position: absolute;
+    top: 5px; left: 5px;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 5px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+  }
+
+  .actions {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    display: flex;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  @media (hover: none) { .actions { opacity: 1; } }
+  .card:hover .actions { opacity: 1; }
+
+  .actions a, .actions button {
+    flex: 1;
+    padding: 6px 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    backdrop-filter: blur(6px);
+  }
+  .btn-dl  { background: rgba(37,99,235,0.85); color: #fff; }
+  .btn-cp  { background: rgba(22,163,74,0.85);  color: #fff; }
+  .btn-del { background: rgba(220,38,38,0.85);  color: #fff; }
+
+  .info { padding: 5px 7px; display: flex; justify-content: space-between; }
+  .info .source { font-size: 0.68rem; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+  .info .date   { font-size: 0.68rem; color: #555; }
+
+  .empty { text-align: center; padding: 4rem 1rem; color: #555; }
+
+  /* Lightbox */
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 95vw; max-height: 95vh; object-fit: contain; border-radius: 4px; }
+  .lightbox-close { position: absolute; top: 12px; right: 16px; font-size: 1.8rem; color: #aaa; cursor: pointer; line-height: 1; background: none; border: none; }
+</style>
+</head>
+<body>
+
+{% set tok = request.args.get('t', '') %}
+{% set tparam = '?t=' ~ tok if tok else '' %}
+
+<header>
+  <span class="title">Downloads</span>
+  <div class="storage">
+    <div class="storage-bar"><div class="storage-bar-fill"></div></div>
+    {{ total_gb }} GB / {{ limit_gb }} GB
+  </div>
+</header>
+
+<div class="tabs">
+  <a class="tab" href="/{{ tparam }}">Videos{% if video_count %} ({{ video_count }}){% endif %}</a>
+  <a class="tab active" href="/images{{ tparam }}">Images{% if images %} ({{ images|length }}){% endif %}</a>
+</div>
+
+<div class="controls">
+  <span style="font-size:0.75rem;color:#666;">Sort:</span>
+  <a class="sort-btn {% if sort == 'date' %}active{% endif %}" href="/images{{ tparam }}{% if tok %}&{% else %}?{% endif %}sort=date">Date</a>
+  <a class="sort-btn {% if sort == 'size' %}active{% endif %}" href="/images{{ tparam }}{% if tok %}&{% else %}?{% endif %}sort=size">Size</a>
+</div>
+
+{% if images %}
+<div class="grid">
+  {% for img in images %}
+  <div class="card">
+    <div class="thumb-wrap">
+      <a class="cover" href="#" onclick="openLightbox('/img/{{ img.id }}'); return false;">
+        <img class="thumb" src="/img/{{ img.id }}" loading="lazy" alt="">
+      </a>
+      <span class="size-badge">{{ img.size_kb }} KB</span>
+      <div class="actions">
+        <a class="btn-dl" href="/download-img/{{ img.id }}{{ tparam }}">⬇</a>
+        <button class="btn-cp" onclick="copyImg('/img/{{ img.id }}', this)">📋</button>
+        <button class="btn-del" onclick="delImg('{{ img.id }}', this)">🗑</button>
+      </div>
+    </div>
+    <div class="info">
+      <span class="source">{{ img.source }}</span>
+      <span class="date">{{ img.downloaded_at[:10] }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">No images yet.</div>
+{% endif %}
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<form id="del-form" method="POST" style="display:none"></form>
+<script>
+function delImg(id, btn) {
+  if (!confirm('Delete this image?')) return;
+  const f = document.getElementById('del-form');
+  f.action = '/delete-img/' + id + '{{ tparam }}';
+  f.submit();
+}
+async function copyImg(src, btn) {
+  // Android Chrome doesn't support ClipboardItem for images — open in new tab for native long-press copy
+  if (!navigator.clipboard || !window.ClipboardItem) {
+    window.open(src, '_blank');
+    return;
+  }
+  try {
+    const resp = await fetch(src);
+    const blob = await resp.blob();
+    let pngBlob;
+    if (blob.type === 'image/png') {
+      pngBlob = blob;
+    } else {
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    }
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
+    const orig = btn.textContent;
+    btn.textContent = '✓';
+    setTimeout(() => btn.textContent = orig, 1500);
+  } catch(e) {
+    // Fallback: open image in new tab
+    window.open(src, '_blank');
+  }
+}
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-img').src = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0f0f; color: #eee; font-family: system-ui, sans-serif; }
+  header { padding: 1rem 1.2rem; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 0.8rem; }
+  header a { color: #888; text-decoration: none; font-size: 1.2rem; }
+  header span { font-size: 1rem; font-weight: 600; }
+  video { width: 100%; display: block; background: #000; max-height: 60vh; }
+  .meta { padding: 1rem 1.2rem; }
+  .meta .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+  .meta .label { color: #888; font-size: 0.8rem; }
+  .meta .value { font-size: 0.85rem; }
+  .actions { padding: 0 1.2rem 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+  .btn { display: block; text-align: center; padding: 0.85rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; text-decoration: none; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-secondary { background: #1a1a1a; color: #eee; border: 1px solid #333; }
+  .btn:active { opacity: 0.8; }
+  .source-link { color: #555; font-size: 0.75rem; word-break: break-all; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/{% if request.args.get('t') %}?t={{ request.args.get('t') }}{% endif %}">←</a>
+  <span>{{ video.source }} · {{ video.downloaded_at[:10] }}</span>
+</header>
+<video src="/stream/{{ video.id }}" controls playsinline preload="metadata"></video>
+<div class="meta">
+  <div class="row"><span class="label">Size</span><span class="value">{{ video.size_mb }} MB</span></div>
+  <div class="row"><span class="label">Downloaded</span><span class="value">{{ video.downloaded_at[:16].replace('T', ' ') }}</span></div>
+  {% if video.original_url %}
+  <div style="margin-top:0.5rem"><a class="source-link" href="{{ video.original_url }}" target="_blank">{{ video.original_url }}</a></div>
+  {% endif %}
+</div>
+<div class="actions">
+  <a class="btn btn-primary" href="/download/{{ video.id }}{% if request.args.get('t') %}?t={{ request.args.get('t') }}{% endif %}">⬇ Download</a>
+  <a class="btn btn-secondary" href="/{% if request.args.get('t') %}?t={{ request.args.get('t') }}{% endif %}">← Back to gallery</a>
+</div>
+</body>
+</html>

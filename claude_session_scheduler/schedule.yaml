@@ -1,0 +1,5 @@
+jobs:
+  - name: morning_session_start
+    schedule: "0 10 * * *"
+    message: "Hi"
+    enabled: true
