@@ -7,6 +7,7 @@ from downloader import handler as downloader
 from downloader import cookie_handler
 from claude_session_scheduler import handler as claude_session_scheduler
 from claude_session_scheduler.service import register_jobs
+from cigarette_charger import handler as cigarette_charger
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -23,6 +24,7 @@ def main():
     cookie_handler.register(app, user_filter)
     claude_session_scheduler.register(app, user_filter)
     register_jobs(app, config.ALLOWED_USER_ID)
+    cigarette_charger.register(app, user_filter, config.ALLOWED_USER_ID)
 
     logging.info("Bot started")
     app.run_polling(allowed_updates=Update.ALL_TYPES)

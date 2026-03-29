@@ -18,6 +18,9 @@ build/
 media/
 cookies.txt
 
+# Cigarette charger state
+cigarette_charger/state.json
+
 # Temp / downloads
 tmp/
 temp/
