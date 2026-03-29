@@ -76,15 +76,15 @@ async def cmd_cigset(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 async def cmd_cighelp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = (
-        "🚬 *Cigarette Charger*\n\n"
+        "🚬 Cigarette Charger\n\n"
         "/cigs — current status\n"
         "/smoke — consume a cigarette\n"
-        "/cigset interval <hours> — charge interval \\(e\\.g\\. `1\\.5`\\)\n"
-        "/cigset start <HH:MM> — day start time \\(e\\.g\\. `08:00`\\)\n"
+        "/cigset interval <hours> — charge interval (e.g. 1.5)\n"
+        "/cigset start <HH:MM> — day start time (e.g. 08:00)\n"
         "/cigset base <n> — cigarettes at day start\n"
         "/cighelp — show this help"
     )
-    await update.message.reply_text(text, parse_mode="MarkdownV2")
+    await update.message.reply_text(text)
 
 
 def _reschedule_charge(app):
